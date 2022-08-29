@@ -1,0 +1,80 @@
+buildscript {
+	repositories {
+		maven {
+			url "${JFROG_ARTIFACTORY_URL}/${JFROG_VIRTUAL_REPO_KEY}"
+			allowInsecureProtocol true
+			credentials {
+				username = "${JFROG_ARTIFACTORY_USER}"
+				password = "${JFROG_ARTIFACTORY_PASSWORD}"
+			}
+		}
+		dependencies {
+			classpath "org.jfrog.buildinfo:build-info-extractor-gradle:latest.release"
+		}
+	}
+}
+
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'com.jfrog.artifactory' version '4.29.0'
+}
+
+repositories {
+	mavenLocal()
+    maven {
+        url "${JFROG_ARTIFACTORY_URL}/${JFROG_VIRTUAL_REPO_KEY}"
+        allowInsecureProtocol true
+        credentials {
+			username = "${JFROG_ARTIFACTORY_USER}"
+			password = "${JFROG_ARTIFACTORY_PASSWORD}"
+		}
+    }
+}
+
+dependencies {
+	implementation 'com.rishabh.common:OsCommon:master'
+	implementation 'com.rishabh.lib:OsLib:master'
+    
+}
+
+group = 'com.rishabh.micorservices'
+version = 'master'
+description = 'OsWeb'
+java.sourceCompatibility = JavaVersion.VERSION_1_8
+
+jar {
+    archiveBaseName = 'OsWeb'
+    archiveVersion =  'master'
+}
+
+artifactory {
+	contextUrl = "${JFROG_ARTIFACTORY_URL}"
+	publish {
+		repository {
+			repoKey = "${JFROG_REPO_KEY}"
+			allowInsecureProtocol true
+			username = "${JFROG_ARTIFACTORY_USER}"
+			password = "${JFROG_ARTIFACTORY_PASSWORD}"
+			maven true
+		}
+	}
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+        	groupId = group
+        	artifactId = project.getName()
+        	version = version
+        	from(components.java)
+        }
+    }
+}
+
+artifactoryPublish{
+	publications(publishing.publications.maven)
+}
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
