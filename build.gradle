@@ -1,5 +1,6 @@
 buildscript {
-	repositories {
+	ext.repos = {
+		mavenLocal()
 		maven {
 			url "${JFROG_ARTIFACTORY_URL}/${JFROG_VIRTUAL_REPO_KEY}"
 			allowInsecureProtocol true
@@ -8,10 +9,11 @@ buildscript {
 				password = "${JFROG_ARTIFACTORY_PASSWORD}"
 			}
 		}
-		dependencies {
-			classpath "org.jfrog.buildinfo:build-info-extractor-gradle:latest.release"
-		}
 	}
+	dependencies {
+		classpath "org.jfrog.buildinfo:build-info-extractor-gradle:latest.release"
+	}
+	repositories repos
 }
 
 plugins {
@@ -20,17 +22,8 @@ plugins {
     id 'com.jfrog.artifactory' version '4.29.0'
 }
 
-repositories {
-	mavenLocal()
-    maven {
-        url "${JFROG_ARTIFACTORY_URL}/${JFROG_VIRTUAL_REPO_KEY}"
-        allowInsecureProtocol true
-        credentials {
-			username = "${JFROG_ARTIFACTORY_USER}"
-			password = "${JFROG_ARTIFACTORY_PASSWORD}"
-		}
-    }
-}
+
+repositories repos
 
 dependencies {
 	implementation 'com.rishabh.common:OsCommon:master'
@@ -48,6 +41,11 @@ jar {
     archiveVersion =  'master'
 }
 
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
 artifactory {
 	contextUrl = "${JFROG_ARTIFACTORY_URL}"
 	publish {
@@ -63,17 +61,42 @@ artifactory {
 
 publishing {
     publications {
-        maven(MavenPublication) {
+        app(MavenPublication) {
         	groupId = group
         	artifactId = project.getName()
         	version = version
-        	from(components.java)
+            from(components.java)
+            versionMapping {
+            	usage('java-api'){
+            		fromResolutionOf('runtimeClasspath')
+            	}
+            	usage('java-runtime'){
+            		fromResolutionResult()
+            	}
+            }
+        }
+        source(MavenPublication) {
+        	groupId = group
+        	artifactId = project.getName()
+        	version = version
+            from(components.java)
+            artifact sourcesJar {
+                classifier "sources"
+            }
+            versionMapping {
+            	usage('java-api'){
+            		fromResolutionOf('runtimeClasspath')
+            	}
+            	usage('java-runtime'){
+            		fromResolutionResult()
+            	}
+            }
         }
     }
 }
 
 artifactoryPublish{
-	publications(publishing.publications.maven)
+	publications(publishing.publications.app)
 }
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'

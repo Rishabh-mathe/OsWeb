@@ -21,6 +21,7 @@ do
 			esac
 			((i=i+1))
 		done
-		echo "git clone -b $branch http://github.com/Rishabh-mathe/$proj ../"
+		echo "clonning --->    git clone -b $branch https://github.com/Rishabh-mathe/$proj ../$proj"
+		$(git clone -b $branch http://github.com/Rishabh-mathe/$proj ../$proj)
 	fi
 done
